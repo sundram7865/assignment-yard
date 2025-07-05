@@ -10,10 +10,14 @@ import {
 } from "@/data/landing";
 import HeroSection from "@/components/hero";
 import Link from "next/link";
-
-const LandingPage = () => {
+const connectDB = require("@/lib/db");
+  
+const LandingPage = async() => {
+        await connectDB();
   return (
     <div className="min-h-screen bg-white">
+
+      
       {/* Hero Section */}
       <HeroSection />
 
