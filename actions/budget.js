@@ -1,7 +1,7 @@
 "use server";
 
 import mongoose from "mongoose";
-import { Budget, Transaction } from "@/models";
+import { Budget, Transaction } from "@/models/models";
 import { revalidatePath } from "next/cache";
 
 // Fetch current month's budget and expense total
