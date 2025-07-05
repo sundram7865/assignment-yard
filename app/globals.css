@@ -120,6 +120,7 @@
     @apply bg-background text-foreground;
   }
 }
+
 .hero-image-wrapper {
   perspective: 1000px;
 }
