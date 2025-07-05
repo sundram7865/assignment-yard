@@ -1,30 +1,28 @@
-// models.js
-
-const mongoose = require('mongoose');
-const { Schema, model } = mongoose;
+const mongoose = require("mongoose");
+const { Schema } = mongoose;
 
 // -------------------- ENUMS --------------------
 const TransactionType = {
-  INCOME: 'INCOME',
-  EXPENSE: 'EXPENSE',
+  INCOME: "INCOME",
+  EXPENSE: "EXPENSE",
 };
 
 const AccountType = {
-  CURRENT: 'CURRENT',
-  SAVINGS: 'SAVINGS',
+  CURRENT: "CURRENT",
+  SAVINGS: "SAVINGS",
 };
 
 const TransactionStatus = {
-  PENDING: 'PENDING',
-  COMPLETED: 'COMPLETED',
-  FAILED: 'FAILED',
+  PENDING: "PENDING",
+  COMPLETED: "COMPLETED",
+  FAILED: "FAILED",
 };
 
 const RecurringInterval = {
-  DAILY: 'DAILY',
-  WEEKLY: 'WEEKLY',
-  MONTHLY: 'MONTHLY',
-  YEARLY: 'YEARLY',
+  DAILY: "DAILY",
+  WEEKLY: "WEEKLY",
+  MONTHLY: "MONTHLY",
+  YEARLY: "YEARLY",
 };
 
 // -------------------- ACCOUNT SCHEMA --------------------
@@ -38,12 +36,18 @@ const AccountSchema = new Schema(
   { timestamps: true }
 );
 
-const Account = model('Account', AccountSchema);
+// Guard model creation
+const Account =
+  mongoose.models.Account || mongoose.model("Account", AccountSchema);
 
 // -------------------- TRANSACTION SCHEMA --------------------
 const TransactionSchema = new Schema(
   {
-    type: { type: String, enum: Object.values(TransactionType), required: true },
+    type: {
+      type: String,
+      enum: Object.values(TransactionType),
+      required: true,
+    },
     amount: { type: mongoose.Types.Decimal128, required: true },
     description: { type: String },
     date: { type: Date, required: true },
@@ -61,12 +65,14 @@ const TransactionSchema = new Schema(
       enum: Object.values(TransactionStatus),
       default: TransactionStatus.COMPLETED,
     },
-    accountId: { type: Schema.Types.ObjectId, ref: 'Account' },
+    accountId: { type: Schema.Types.ObjectId, ref: "Account" },
   },
   { timestamps: true }
 );
 
-const Transaction = model('Transaction', TransactionSchema);
+const Transaction =
+  mongoose.models.Transaction ||
+  mongoose.model("Transaction", TransactionSchema);
 
 // -------------------- BUDGET SCHEMA --------------------
 const BudgetSchema = new Schema(
@@ -77,7 +83,8 @@ const BudgetSchema = new Schema(
   { timestamps: true }
 );
 
-const Budget = model('Budget', BudgetSchema);
+const Budget =
+  mongoose.models.Budget || mongoose.model("Budget", BudgetSchema);
 
 // -------------------- EXPORTS --------------------
 module.exports = {

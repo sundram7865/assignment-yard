@@ -1,22 +1,23 @@
-import { getUserAccounts, getDashboardData } from "@/actions/dashboard";
+import { getAccounts, getDashboardData } from "@/actions/dashboard";
 import { getCurrentBudget } from "@/actions/budget";
 import { AccountCard } from "./_components/account-card";
+
+import { DashboardOverview } from "./_components/transaction-overview";
 import { CreateAccountDrawer } from "@/components/create-account-drawer";
-import { BudgetProgress } from "./_components/budget-progress";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus } from "lucide-react";
-import { DashboardOverview } from "./_components/transaction-overview";
 
 export default async function DashboardPage() {
-  // Fetch accounts and transactions concurrently
+  // Fetch accounts and dashboard data concurrently
   const [accounts, transactions] = await Promise.all([
-    getUserAccounts(),
+    getAccounts(),
     getDashboardData(),
   ]);
 
   const defaultAccount = accounts?.find((account) => account.isDefault);
 
-  // Fetch budget only for default account
+  // Fetch budget data for the default account
   let budgetData = null;
   if (defaultAccount) {
     budgetData = await getCurrentBudget(defaultAccount.id);
@@ -38,6 +39,7 @@ export default async function DashboardPage() {
 
       {/* Accounts Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* Create Account Button */}
         <CreateAccountDrawer>
           <Card className="hover:shadow-md transition-shadow cursor-pointer border-dashed">
             <CardContent className="flex flex-col items-center justify-center text-muted-foreground h-full pt-5">
@@ -47,6 +49,7 @@ export default async function DashboardPage() {
           </Card>
         </CreateAccountDrawer>
 
+        {/* Existing Accounts */}
         {accounts.length > 0 &&
           accounts.map((account) => (
             <AccountCard key={account.id} account={account} />

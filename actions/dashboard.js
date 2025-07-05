@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { Account, Transaction } from "@/models/models"; // your mongoose models
-import { connectToDB } from "@/lib/db"; // a utility function to connect if needed
+import { Account, Transaction } from "@/models/models";
+import { connectDB } from "@/lib/db"; // ✅ correct for named export
 
+
+// ----------- Helper for Mongoose Decimal128 to float -----------
 const serializeTransaction = (obj) => {
   const serialized = { ...obj._doc };
   if (obj.balance) {
@@ -16,13 +18,13 @@ const serializeTransaction = (obj) => {
   return serialized;
 };
 
-// Get all accounts (single-user mode)
-export async function getUserAccounts() {
-  await connectToDB();
+// ----------- Get all accounts (single-user mode) -----------
+export async function getAccounts() {
+  await connectDB();
 
   try {
     const accounts = await Account.find().sort({ createdAt: -1 });
-    const accountsWithTransactionCount = await Promise.all(
+    const accountsWithTxCount = await Promise.all(
       accounts.map(async (account) => {
         const txCount = await Transaction.countDocuments({ accountId: account._id });
         return {
@@ -34,16 +36,16 @@ export async function getUserAccounts() {
       })
     );
 
-    return accountsWithTransactionCount;
+    return accountsWithTxCount;
   } catch (error) {
     console.error(error.message);
     throw new Error("Failed to fetch accounts");
   }
 }
 
-// Create a new account
+// ----------- Create a new account -----------
 export async function createAccount(data) {
-  await connectToDB();
+  await connectDB();
 
   try {
     const balanceFloat = parseFloat(data.balance);
@@ -55,6 +57,7 @@ export async function createAccount(data) {
 
     const shouldBeDefault = existingAccounts.length === 0 ? true : data.isDefault;
 
+    // If this new one is default, remove default from others
     if (shouldBeDefault) {
       await Account.updateMany({ isDefault: true }, { isDefault: false });
     }
@@ -75,9 +78,9 @@ export async function createAccount(data) {
   }
 }
 
-// Fetch all transactions for dashboard
+// ----------- Get dashboard transactions -----------
 export async function getDashboardData() {
-  await connectToDB();
+  await connectDB();
 
   try {
     const transactions = await Transaction.find().sort({ date: -1 });
