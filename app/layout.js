@@ -14,7 +14,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${inter.className}`}
       >
-    
+       <Header/>
         {children}
         {/*footer*/}
          <footer className="bg-blue-50 text-gray-700 py-10">
