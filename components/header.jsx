@@ -8,15 +8,16 @@ const Header = () => {
   return (
     <header className="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 border-b">
       <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link href="/">
-          <Image
-            src={"/logo.png"}
-            alt="BudgetIQ Logo"
-            width={200}
-            height={60}
-            className="h-12 w-auto object-contain"
-          />
-        </Link>
+       <Link href="/">
+  <Image
+    src="/logo.png"
+    alt="BudgetIQ Logo"
+    width={600}
+    height={120}
+    className="h-12 w-auto object-contain" // Increased from h-12 to h-20
+  />
+</Link>
+
 
         {/* Navigation Links */}
         <div className="hidden md:flex items-center space-x-8">
