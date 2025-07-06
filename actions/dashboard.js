@@ -2,36 +2,37 @@
 
 import { revalidatePath } from "next/cache";
 import { Account, Transaction } from "@/models/models";
-import { connectDB } from "@/lib/db"; // ✅ correct for named export
+import { connectDB } from "@/lib/db";
 
+// ----------- Helper for safely serializing Mongoose docs -----------
+function serializeDoc(doc) {
+  if (!doc) return null;
+  const obj = doc.toObject();
+  obj.id = obj._id.toString();
+  delete obj._id;
+  delete obj.__v;
 
-// ----------- Helper for Mongoose Decimal128 to float -----------
-const serializeTransaction = (obj) => {
-  const serialized = { ...obj._doc };
-  if (obj.balance) {
-    serialized.balance = parseFloat(obj.balance.toString());
-  }
-  if (obj.amount) {
-    serialized.amount = parseFloat(obj.amount.toString());
-  }
-  serialized.id = obj._id.toString();
-  return serialized;
-};
+  if (obj.balance?.toString) obj.balance = parseFloat(obj.balance.toString());
+  if (obj.amount?.toString) obj.amount = parseFloat(obj.amount.toString());
+  if (obj.createdAt) obj.createdAt = obj.createdAt.toISOString();
+  if (obj.updatedAt) obj.updatedAt = obj.updatedAt.toISOString();
 
-// ----------- Get all accounts (single-user mode) -----------
+  return obj;
+}
+
+// ----------- Get all accounts with transaction counts -----------
 export async function getAccounts() {
   await connectDB();
 
   try {
     const accounts = await Account.find().sort({ createdAt: -1 });
+
     const accountsWithTxCount = await Promise.all(
       accounts.map(async (account) => {
         const txCount = await Transaction.countDocuments({ accountId: account._id });
         return {
-          ...serializeTransaction(account),
-          _count: {
-            transactions: txCount,
-          },
+          ...serializeDoc(account),
+          _count: { transactions: txCount },
         };
       })
     );
@@ -49,15 +50,11 @@ export async function createAccount(data) {
 
   try {
     const balanceFloat = parseFloat(data.balance);
-    if (isNaN(balanceFloat)) {
-      throw new Error("Invalid balance amount");
-    }
+    if (isNaN(balanceFloat)) throw new Error("Invalid balance amount");
 
     const existingAccounts = await Account.find();
+    const shouldBeDefault = existingAccounts.length === 0 || data.isDefault;
 
-    const shouldBeDefault = existingAccounts.length === 0 ? true : data.isDefault;
-
-    // If this new one is default, remove default from others
     if (shouldBeDefault) {
       await Account.updateMany({ isDefault: true }, { isDefault: false });
     }
@@ -71,7 +68,7 @@ export async function createAccount(data) {
 
     revalidatePath("/dashboard");
 
-    return { success: true, data: serializeTransaction(newAccount) };
+    return { success: true, data: serializeDoc(newAccount) };
   } catch (error) {
     console.error(error.message);
     throw new Error("Failed to create account");
@@ -84,7 +81,7 @@ export async function getDashboardData() {
 
   try {
     const transactions = await Transaction.find().sort({ date: -1 });
-    return transactions.map(serializeTransaction);
+    return transactions.map(serializeDoc);
   } catch (error) {
     console.error(error.message);
     throw new Error("Failed to fetch dashboard data");

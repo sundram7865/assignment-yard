@@ -63,6 +63,13 @@ export function BudgetProgress({ initialBudget, currentExpenses }) {
     }
   }, [error]);
 
+  const progressColor =
+    percentUsed >= 90
+      ? "bg-red-500"
+      : percentUsed >= 75
+      ? "bg-yellow-500"
+      : "bg-green-500";
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -126,14 +133,7 @@ export function BudgetProgress({ initialBudget, currentExpenses }) {
           <div className="space-y-2">
             <Progress
               value={percentUsed}
-              extraStyles={`${
-                // add to Progress component
-                percentUsed >= 90
-                  ? "bg-red-500"
-                  : percentUsed >= 75
-                    ? "bg-yellow-500"
-                    : "bg-green-500"
-              }`}
+              indicatorClassName={progressColor} // ✅ Use valid custom prop
             />
             <p className="text-xs text-muted-foreground text-right">
               {percentUsed.toFixed(1)}% used

@@ -7,14 +7,19 @@ import { revalidatePath } from "next/cache";
 
 // ---------- Serialize helper ----------
 const serialize = (obj) => {
-  const serialized = obj.toObject();
-  serialized.id = serialized._id.toString();
+  const doc = obj.toObject ? obj.toObject() : obj;
+  const serialized = { ...doc };
+
+  serialized.id = serialized._id?.toString();
+
   if (serialized.balance instanceof mongoose.Types.Decimal128) {
     serialized.balance = parseFloat(serialized.balance.toString());
   }
+
   if (serialized.amount instanceof mongoose.Types.Decimal128) {
     serialized.amount = parseFloat(serialized.amount.toString());
   }
+
   return serialized;
 };
 
@@ -54,7 +59,7 @@ export async function bulkDeleteTransactions(transactionIds) {
       _id: { $in: transactionIds.map((id) => new mongoose.Types.ObjectId(id)) },
     });
 
-    const accountBalanceChanges = transactions.reduce((acc, tx) => {
+    const balanceChanges = transactions.reduce((acc, tx) => {
       const change = tx.type === "EXPENSE" ? tx.amount : -tx.amount;
       const accountId = tx.accountId.toString();
       acc[accountId] = (acc[accountId] || 0) + parseFloat(change.toString());
@@ -66,9 +71,9 @@ export async function bulkDeleteTransactions(transactionIds) {
       _id: { $in: transactionIds.map((id) => new mongoose.Types.ObjectId(id)) },
     });
 
-    // Update balances
+    // Apply balance changes
     await Promise.all(
-      Object.entries(accountBalanceChanges).map(([accountId, change]) => {
+      Object.entries(balanceChanges).map(([accountId, change]) => {
         return Account.findByIdAndUpdate(accountId, {
           $inc: { balance: change },
         });
@@ -85,15 +90,12 @@ export async function bulkDeleteTransactions(transactionIds) {
   }
 }
 
-// -------- Update default account (only one default allowed) --------
+// -------- Update default account --------
 export async function updateDefaultAccount(accountId) {
   try {
     await connectDB();
 
-    await Account.updateMany(
-      { isDefault: true },
-      { $set: { isDefault: false } }
-    );
+    await Account.updateMany({ isDefault: true }, { isDefault: false });
 
     const updated = await Account.findByIdAndUpdate(
       accountId,

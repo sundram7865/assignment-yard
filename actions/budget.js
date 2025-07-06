@@ -4,14 +4,25 @@ import mongoose from "mongoose";
 import { Budget, Transaction } from "@/models/models";
 import { revalidatePath } from "next/cache";
 
-// Fetch current month's budget and expense total
+// Helper to serialize a Mongoose document
+const serialize = (doc) => {
+  if (!doc) return null;
+  const obj = doc.toObject();
+  obj._id = obj._id.toString();
+  if (obj.amount?.toString) obj.amount = parseFloat(obj.amount.toString());
+  if (obj.createdAt) obj.createdAt = obj.createdAt.toISOString();
+  if (obj.updatedAt) obj.updatedAt = obj.updatedAt.toISOString();
+  return obj;
+};
+
+// -------- Get current month's budget and total expenses --------
 export async function getCurrentBudget(accountId) {
   try {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    const budget = await Budget.findOne(); // only one budget for single user
+    const budgetDoc = await Budget.findOne(); // single-user mode
 
     const expensesAgg = await Transaction.aggregate([
       {
@@ -32,7 +43,7 @@ export async function getCurrentBudget(accountId) {
     const currentExpenses = expensesAgg[0]?.total || 0;
 
     return {
-      budget,
+      budget: serialize(budgetDoc),
       currentExpenses,
     };
   } catch (error) {
@@ -41,7 +52,7 @@ export async function getCurrentBudget(accountId) {
   }
 }
 
-// Update or create monthly budget
+// -------- Update or create budget --------
 export async function updateBudget(amount) {
   try {
     if (!amount || isNaN(amount) || amount <= 0) {
@@ -58,7 +69,7 @@ export async function updateBudget(amount) {
 
     return {
       success: true,
-      data: updated,
+      data: serialize(updated),
     };
   } catch (error) {
     console.error("Error updating budget:", error);
