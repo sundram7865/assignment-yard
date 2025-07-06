@@ -1,6 +1,7 @@
 import { getAccounts, getDashboardData } from "@/actions/dashboard";
 import { getCurrentBudget } from "@/actions/budget";
 import { AccountCard } from "./_components/account-card";
+import { BudgetProgress } from "./_components/budget-progress";
 
 import { DashboardOverview } from "./_components/transaction-overview";
 import { CreateAccountDrawer } from "@/components/create-account-drawer";

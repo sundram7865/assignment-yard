@@ -10,7 +10,7 @@ import {
 } from "@/data/landing";
 import HeroSection from "@/components/hero";
 import Link from "next/link";
-const connectDB = require("@/lib/db");
+import {connectDB} from "@/lib/db"
   
 const LandingPage = async() => {
         await connectDB();
