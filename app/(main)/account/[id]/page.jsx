@@ -3,14 +3,53 @@ import { TransactionTable } from "../_components/transaction-table";
 import { notFound } from "next/navigation";
 import { AccountChart } from "../_components/account-chart";
 
+// Helper to serialize Mongoose Transaction and Account data
+function serializeTransaction(tx) {
+  return {
+    ...tx,
+    id: tx._id?.toString?.() ?? tx.id ?? "",
+    accountId: tx.accountId?.toString?.() ?? "",
+    amount: parseFloat(tx.amount?.toString?.() ?? "0"),
+    date: tx.date instanceof Date ? tx.date.toISOString() : tx.date,
+    nextRecurringDate: tx.nextRecurringDate instanceof Date
+      ? tx.nextRecurringDate.toISOString()
+      : tx.nextRecurringDate,
+    createdAt: tx.createdAt instanceof Date
+      ? tx.createdAt.toISOString()
+      : tx.createdAt,
+    updatedAt: tx.updatedAt instanceof Date
+      ? tx.updatedAt.toISOString()
+      : tx.updatedAt,
+  };
+}
+
+function serializeAccount(account) {
+  return {
+    ...account,
+    id: account._id?.toString?.() ?? account.id ?? "",
+    balance: parseFloat(account.balance?.toString?.() ?? "0"),
+    createdAt:
+      account.createdAt instanceof Date
+        ? account.createdAt.toISOString()
+        : account.createdAt,
+    updatedAt:
+      account.updatedAt instanceof Date
+        ? account.updatedAt.toISOString()
+        : account.updatedAt,
+  };
+}
+
 export default async function AccountPage({ params }) {
   const accountData = await getAccountWithTransactions(params.id);
 
   if (!accountData) {
-    notFound(); // gracefully 404 if not found
+    notFound();
   }
 
-  const { transactions, ...account } = accountData;
+  const { transactions: rawTransactions, ...rawAccount } = accountData;
+
+  const transactions = rawTransactions.map(serializeTransaction);
+  const account = serializeAccount(rawAccount);
 
   return (
     <div className="space-y-8 px-5">
@@ -37,10 +76,10 @@ export default async function AccountPage({ params }) {
       </div>
 
       {/* Chart */}
-      <AccountChart transactions={transactions || []} />
+      <AccountChart transactions={transactions} />
 
       {/* Table */}
-      <TransactionTable transactions={transactions || []} />
+      <TransactionTable transactions={transactions} />
     </div>
   );
 }

@@ -14,8 +14,31 @@ const serializeBudget = (budget) => {
 
   const { _id, amount } = budget;
   return {
-    id: _id.toString(),
-    amount: parseFloat(amount?.toString() || "0"),
+    id: _id?.toString?.() ?? "",
+    amount: parseFloat(amount?.toString?.() ?? "0"),
+  };
+};
+
+// ---- Helper to serialize each transaction safely ----
+const serializeTransaction = (tx) => {
+  return {
+    ...tx,
+    id: tx._id?.toString?.() ?? tx.id ?? "",
+    accountId:
+      typeof tx.accountId === "object" && typeof tx.accountId.toString === "function"
+        ? tx.accountId.toString()
+        : String(tx.accountId ?? ""),
+    amount: parseFloat(tx.amount?.toString?.() ?? "0"),
+    date: tx.date instanceof Date ? tx.date.toISOString() : tx.date,
+    nextRecurringDate: tx.nextRecurringDate instanceof Date
+      ? tx.nextRecurringDate.toISOString()
+      : tx.nextRecurringDate,
+    createdAt: tx.createdAt instanceof Date
+      ? tx.createdAt.toISOString()
+      : tx.createdAt,
+    updatedAt: tx.updatedAt instanceof Date
+      ? tx.updatedAt.toISOString()
+      : tx.updatedAt,
   };
 };
 
@@ -46,26 +69,10 @@ export default async function DashboardPage() {
       />
 
       {/* Transaction Overview */}
-     <DashboardOverview
-  accounts={accounts}
-  transactions={transactions.map((tx) => ({
-    ...tx,
-    id: tx._id?.toString?.() ?? tx.id ?? "",
-    accountId: tx.accountId?.toString?.() ?? "",
-    amount: parseFloat(tx.amount?.toString?.() ?? "0"),
-    date: tx.date instanceof Date ? tx.date.toISOString() : tx.date,
-    nextRecurringDate: tx.nextRecurringDate instanceof Date
-      ? tx.nextRecurringDate.toISOString()
-      : tx.nextRecurringDate,
-    createdAt: tx.createdAt instanceof Date
-      ? tx.createdAt.toISOString()
-      : tx.createdAt,
-    updatedAt: tx.updatedAt instanceof Date
-      ? tx.updatedAt.toISOString()
-      : tx.updatedAt,
-  }))}
-/>
-
+      <DashboardOverview
+        accounts={accounts}
+        transactions={transactions.map(serializeTransaction)}
+      />
 
       {/* Account Cards Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
