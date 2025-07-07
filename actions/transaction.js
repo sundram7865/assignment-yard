@@ -5,23 +5,33 @@ import { Transaction, Account } from "@/models/models";
 import { revalidatePath } from "next/cache";
 import mongoose from "mongoose";
 
-// Create Transaction
+// ✅ Decimal Conversion Helper
+const toDecimal128 = (value) =>
+  mongoose.Types.Decimal128.fromString(parseFloat(value).toString());
+
+// ✅ Number Conversion from Decimal128
+const toNumber = (decimal) => parseFloat(decimal?.toString() || "0");
+
+// ✅ Create Transaction
 export async function createTransaction(data) {
   await connectDB();
 
-  const account = await Account.findById(data.accountId);
-  if (!account) throw new Error("Account not found");
-
-  const balanceChange = data.type === "EXPENSE" ? -data.amount : data.amount;
   const session = await mongoose.startSession();
+  session.startTransaction();
 
   try {
-    session.startTransaction();
+    const amount = toDecimal128(data.amount);
+    const account = await Account.findById(data.accountId).session(session);
+    if (!account) throw new Error("Account not found");
+
+    const balanceChange =
+      data.type === "EXPENSE" ? -parseFloat(data.amount) : parseFloat(data.amount);
 
     const newTransaction = await Transaction.create(
       [
         {
           ...data,
+          amount,
           nextRecurringDate:
             data.isRecurring && data.recurringInterval
               ? calculateNextRecurringDate(data.date, data.recurringInterval)
@@ -31,7 +41,9 @@ export async function createTransaction(data) {
       { session }
     );
 
-    account.balance += balanceChange;
+    // Update account balance
+    const newBalance = toNumber(account.balance) + balanceChange;
+    account.balance = toDecimal128(newBalance);
     await account.save({ session });
 
     await session.commitTransaction();
@@ -40,45 +52,47 @@ export async function createTransaction(data) {
     revalidatePath("/dashboard");
     revalidatePath(`/account/${data.accountId}`);
 
-    return { success: true, data: newTransaction[0] };
+    return { success: true, data: newTransaction[0].toObject() }; // ✅ Prevent serialization error
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
-    return { success: false, message: error.message };
+    console.error("Transaction creation error:", error);
+    return { success: false, message: error.message || "Something went wrong" };
   }
 }
 
-// Get Transaction by ID
-export async function getTransaction(id) {
-  await connectDB();
-  const transaction = await Transaction.findById(id);
-  if (!transaction) throw new Error("Transaction not found");
-  return transaction;
-}
-
-// Update Transaction
+// ✅ Update Transaction
 export async function updateTransaction(id, data) {
   await connectDB();
 
-  const original = await Transaction.findById(id);
-  if (!original) throw new Error("Transaction not found");
-
-  const account = await Account.findById(data.accountId);
-  if (!account) throw new Error("Account not found");
-
-  const oldChange =
-    original.type === "EXPENSE" ? -original.amount : original.amount;
-  const newChange = data.type === "EXPENSE" ? -data.amount : data.amount;
-  const netChange = newChange - oldChange;
-
   const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    session.startTransaction();
+    const amount = toDecimal128(data.amount);
+    const original = await Transaction.findById(id).session(session);
+    if (!original) throw new Error("Original transaction not found");
+
+    const account = await Account.findById(data.accountId).session(session);
+    if (!account) throw new Error("Account not found");
+
+    const oldChange =
+      original.type === "EXPENSE"
+        ? -toNumber(original.amount)
+        : toNumber(original.amount);
+
+    const newChange =
+      data.type === "EXPENSE"
+        ? -parseFloat(data.amount)
+        : parseFloat(data.amount);
+
+    const netChange = newChange - oldChange;
 
     const updated = await Transaction.findByIdAndUpdate(
       id,
       {
         ...data,
+        amount,
         nextRecurringDate:
           data.isRecurring && data.recurringInterval
             ? calculateNextRecurringDate(data.date, data.recurringInterval)
@@ -87,7 +101,8 @@ export async function updateTransaction(id, data) {
       { new: true, session }
     );
 
-    account.balance += netChange;
+    const updatedBalance = toNumber(account.balance) + netChange;
+    account.balance = toDecimal128(updatedBalance);
     await account.save({ session });
 
     await session.commitTransaction();
@@ -96,25 +111,47 @@ export async function updateTransaction(id, data) {
     revalidatePath("/dashboard");
     revalidatePath(`/account/${data.accountId}`);
 
-    return { success: true, data: updated };
+    return { success: true, data: updated.toObject() }; // ✅ Prevent serialization error
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
+    console.error("Transaction update error:", error);
+    return { success: false, message: error.message || "Update failed" };
+  }
+}
+
+// ✅ Get Transaction by ID
+export async function getTransaction(id) {
+  await connectDB();
+  try {
+    const transaction = await Transaction.findById(id);
+    if (!transaction) throw new Error("Transaction not found");
+    return transaction.toObject();
+  } catch (error) {
+    console.error("Get transaction error:", error);
+    return null;
+  }
+}
+
+// ✅ Get All Transactions
+export async function getUserTransactions(query = {}) {
+  await connectDB();
+  try {
+    const transactions = await Transaction.find(query)
+      .populate("account")
+      .sort({ date: -1 });
+
+    return {
+      success: true,
+      data: transactions.map((t) => t.toObject()),
+    };
+  } catch (error) {
+    console.error("Get transactions error:", error);
     return { success: false, message: error.message };
   }
 }
 
-// Get All Transactions (optional filters like userId, accountId)
-export async function getUserTransactions(query = {}) {
-  await connectDB();
-  const transactions = await Transaction.find(query)
-    .populate("account")
-    .sort({ date: -1 });
-
-  return { success: true, data: transactions };
-}
-
-// Helper: Calculate next recurring date
+// ✅ Recurring Date Helper
 function calculateNextRecurringDate(startDate, interval) {
   const date = new Date(startDate);
   switch (interval) {

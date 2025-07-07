@@ -30,13 +30,12 @@ const AccountSchema = new Schema(
   {
     name: { type: String, required: true },
     type: { type: String, enum: Object.values(AccountType), required: true },
-    balance: { type: mongoose.Types.Decimal128, default: 0 },
+    balance: { type: "Decimal128", default: 0 },
     isDefault: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
-// Guard model creation
 const Account =
   mongoose.models.Account || mongoose.model("Account", AccountSchema);
 
@@ -48,7 +47,7 @@ const TransactionSchema = new Schema(
       enum: Object.values(TransactionType),
       required: true,
     },
-    amount: { type: mongoose.Types.Decimal128, required: true },
+    amount: { type: "Decimal128", required: true },
     description: { type: String },
     date: { type: Date, required: true },
     category: { type: String },
@@ -78,7 +77,7 @@ const Transaction =
 const BudgetSchema = new Schema(
   {
     category: { type: String, required: true },
-    amount: { type: mongoose.Types.Decimal128, required: true },
+    amount: { type: "Decimal128", required: true },
   },
   { timestamps: true }
 );
