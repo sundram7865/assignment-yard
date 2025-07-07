@@ -46,10 +46,26 @@ export default async function DashboardPage() {
       />
 
       {/* Transaction Overview */}
-      <DashboardOverview
-        accounts={accounts}
-        transactions={transactions}
-      />
+     <DashboardOverview
+  accounts={accounts}
+  transactions={transactions.map((tx) => ({
+    ...tx,
+    id: tx._id?.toString?.() ?? tx.id ?? "",
+    accountId: tx.accountId?.toString?.() ?? "",
+    amount: parseFloat(tx.amount?.toString?.() ?? "0"),
+    date: tx.date instanceof Date ? tx.date.toISOString() : tx.date,
+    nextRecurringDate: tx.nextRecurringDate instanceof Date
+      ? tx.nextRecurringDate.toISOString()
+      : tx.nextRecurringDate,
+    createdAt: tx.createdAt instanceof Date
+      ? tx.createdAt.toISOString()
+      : tx.createdAt,
+    updatedAt: tx.updatedAt instanceof Date
+      ? tx.updatedAt.toISOString()
+      : tx.updatedAt,
+  }))}
+/>
+
 
       {/* Account Cards Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
