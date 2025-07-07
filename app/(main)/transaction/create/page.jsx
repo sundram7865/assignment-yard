@@ -1,25 +1,29 @@
-import { getUserAccounts } from "@/actions/dashboard";
+import { getAccounts } from "@/actions/dashboard";
 import { defaultCategories } from "@/data/categories";
 import { AddTransactionForm } from "../_components/transaction-form";
 import { getTransaction } from "@/actions/transaction";
 
-export default async function AddTransactionPage({ searchParams }) {
-  const accounts = await getUserAccounts();
-  const editId = searchParams?.edit || null;
+export const dynamic = "force-dynamic"; // Avoid caching for real-time updates
+
+export default async function AddTransactionPage({ searchParams: rawSearchParams }) {
+  const searchParams = await rawSearchParams; // ✅ FIXED: await is required
+  const accounts = await getAccounts();
+
+  const editId = searchParams?.edit;
 
   let initialData = null;
 
-  if (editId) {
+  if (typeof editId === "string") {
     const transaction = await getTransaction(editId);
     if (transaction) {
       initialData = {
-        id: transaction.id,
+        id: transaction._id.toString(),
         type: transaction.type,
         amount: transaction.amount,
         description: transaction.description,
         accountId: transaction.accountId,
         category: transaction.category,
-        date: transaction.date,
+        date: new Date(transaction.date),
         isRecurring: transaction.isRecurring,
         recurringInterval: transaction.recurringInterval || null,
       };

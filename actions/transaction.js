@@ -1,21 +1,15 @@
 "use server";
 
 import { connectDB } from "@/lib/db";
-import { Transaction, Account, User } from "@/models/models";
-import { auth } from "@clerk/nextjs/server";
+import { Transaction, Account } from "@/models/models";
 import { revalidatePath } from "next/cache";
 import mongoose from "mongoose";
 
 // Create Transaction
 export async function createTransaction(data) {
   await connectDB();
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
 
-  const user = await User.findOne({ clerkUserId: userId });
-  if (!user) throw new Error("User not found");
-
-  const account = await Account.findOne({ _id: data.accountId, userId: user._id });
+  const account = await Account.findById(data.accountId);
   if (!account) throw new Error("Account not found");
 
   const balanceChange = data.type === "EXPENSE" ? -data.amount : data.amount;
@@ -24,14 +18,18 @@ export async function createTransaction(data) {
   try {
     session.startTransaction();
 
-    const newTransaction = await Transaction.create([{ 
-      ...data,
-      userId: user._id,
-      nextRecurringDate:
-        data.isRecurring && data.recurringInterval
-          ? calculateNextRecurringDate(data.date, data.recurringInterval)
-          : null,
-    }], { session });
+    const newTransaction = await Transaction.create(
+      [
+        {
+          ...data,
+          nextRecurringDate:
+            data.isRecurring && data.recurringInterval
+              ? calculateNextRecurringDate(data.date, data.recurringInterval)
+              : null,
+        },
+      ],
+      { session }
+    );
 
     account.balance += balanceChange;
     await account.save({ session });
@@ -46,41 +44,30 @@ export async function createTransaction(data) {
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
-    throw new Error(error.message);
+    return { success: false, message: error.message };
   }
 }
 
 // Get Transaction by ID
 export async function getTransaction(id) {
   await connectDB();
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await User.findOne({ clerkUserId: userId });
-  if (!user) throw new Error("User not found");
-
-  const transaction = await Transaction.findOne({ _id: id, userId: user._id });
+  const transaction = await Transaction.findById(id);
   if (!transaction) throw new Error("Transaction not found");
-
   return transaction;
 }
 
 // Update Transaction
 export async function updateTransaction(id, data) {
   await connectDB();
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
 
-  const user = await User.findOne({ clerkUserId: userId });
-  if (!user) throw new Error("User not found");
-
-  const original = await Transaction.findOne({ _id: id, userId: user._id });
+  const original = await Transaction.findById(id);
   if (!original) throw new Error("Transaction not found");
 
-  const account = await Account.findOne({ _id: data.accountId });
+  const account = await Account.findById(data.accountId);
   if (!account) throw new Error("Account not found");
 
-  const oldChange = original.type === "EXPENSE" ? -original.amount : original.amount;
+  const oldChange =
+    original.type === "EXPENSE" ? -original.amount : original.amount;
   const newChange = data.type === "EXPENSE" ? -data.amount : data.amount;
   const netChange = newChange - oldChange;
 
@@ -88,8 +75,8 @@ export async function updateTransaction(id, data) {
   try {
     session.startTransaction();
 
-    const updated = await Transaction.findOneAndUpdate(
-      { _id: id, userId: user._id },
+    const updated = await Transaction.findByIdAndUpdate(
+      id,
       {
         ...data,
         nextRecurringDate:
@@ -113,33 +100,36 @@ export async function updateTransaction(id, data) {
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
-    throw new Error(error.message);
+    return { success: false, message: error.message };
   }
 }
 
-// Get All Transactions
+// Get All Transactions (optional filters like userId, accountId)
 export async function getUserTransactions(query = {}) {
   await connectDB();
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await User.findOne({ clerkUserId: userId });
-  if (!user) throw new Error("User not found");
-
-  const transactions = await Transaction.find({ userId: user._id, ...query })
+  const transactions = await Transaction.find(query)
     .populate("account")
     .sort({ date: -1 });
 
   return { success: true, data: transactions };
 }
 
+// Helper: Calculate next recurring date
 function calculateNextRecurringDate(startDate, interval) {
   const date = new Date(startDate);
   switch (interval) {
-    case "DAILY": date.setDate(date.getDate() + 1); break;
-    case "WEEKLY": date.setDate(date.getDate() + 7); break;
-    case "MONTHLY": date.setMonth(date.getMonth() + 1); break;
-    case "YEARLY": date.setFullYear(date.getFullYear() + 1); break;
+    case "DAILY":
+      date.setDate(date.getDate() + 1);
+      break;
+    case "WEEKLY":
+      date.setDate(date.getDate() + 7);
+      break;
+    case "MONTHLY":
+      date.setMonth(date.getMonth() + 1);
+      break;
+    case "YEARLY":
+      date.setFullYear(date.getFullYear() + 1);
+      break;
   }
   return date;
 }
