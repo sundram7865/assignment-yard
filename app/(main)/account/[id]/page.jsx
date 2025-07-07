@@ -1,12 +1,9 @@
-// app/account/[id]/page.jsx or page.tsx
-
 import { getAccountWithTransactions } from "@/actions/account";
 import { TransactionTable } from "../_components/transaction-table";
-import { AccountChart } from "../_components/account-chart";
 import { notFound } from "next/navigation";
-import React from "react";
+import { AccountChart } from "../_components/account-chart";
 
-// Helper: Safely serialize a transaction for client components
+// ✅ Serialize helpers
 function serializeTransaction(tx) {
   return {
     id: tx._id?.toString?.() ?? tx.id ?? "",
@@ -16,25 +13,20 @@ function serializeTransaction(tx) {
     description: tx.description || "",
     category: tx.category || "",
     isRecurring: !!tx.isRecurring,
+    recurringInterval: tx.recurringInterval || "",
     status: tx.status || "",
-    date:
-      tx.date instanceof Date ? tx.date.toISOString() : tx.date,
+    date: tx.date instanceof Date ? tx.date.toISOString() : tx.date,
     nextRecurringDate:
       tx.nextRecurringDate instanceof Date
         ? tx.nextRecurringDate.toISOString()
         : tx.nextRecurringDate,
     createdAt:
-      tx.createdAt instanceof Date
-        ? tx.createdAt.toISOString()
-        : tx.createdAt,
+      tx.createdAt instanceof Date ? tx.createdAt.toISOString() : tx.createdAt,
     updatedAt:
-      tx.updatedAt instanceof Date
-        ? tx.updatedAt.toISOString()
-        : tx.updatedAt,
+      tx.updatedAt instanceof Date ? tx.updatedAt.toISOString() : tx.updatedAt,
   };
 }
 
-// Helper: Safely serialize the account
 function serializeAccount(acc) {
   return {
     id: acc._id?.toString?.() ?? acc.id ?? "",
@@ -42,30 +34,23 @@ function serializeAccount(acc) {
     type: acc.type || "OTHER",
     balance: parseFloat(acc.balance?.toString?.() ?? "0"),
     createdAt:
-      acc.createdAt instanceof Date
-        ? acc.createdAt.toISOString()
-        : acc.createdAt,
+      acc.createdAt instanceof Date ? acc.createdAt.toISOString() : acc.createdAt,
     updatedAt:
-      acc.updatedAt instanceof Date
-        ? acc.updatedAt.toISOString()
-        : acc.updatedAt,
+      acc.updatedAt instanceof Date ? acc.updatedAt.toISOString() : acc.updatedAt,
     _count: {
       transactions: acc._count?.transactions || 0,
     },
   };
 }
 
+// ✅ VALID DEFAULT EXPORT — React Server Component
 export default async function AccountPage({ params }) {
-  const accountId = params.id;
+  const accountId = params?.id;
 
-  if (!accountId) {
-    notFound();
-  }
+  if (!accountId) notFound();
 
   const accountData = await getAccountWithTransactions(accountId);
-  if (!accountData) {
-    notFound();
-  }
+  if (!accountData) notFound();
 
   const { transactions: rawTransactions, ...rawAccount } = accountData;
 
@@ -80,9 +65,12 @@ export default async function AccountPage({ params }) {
             {account.name}
           </h1>
           <p className="text-muted-foreground">
-            {account.type.charAt(0).toUpperCase() + account.type.slice(1).toLowerCase()} Account
+            {account.type.charAt(0).toUpperCase() +
+              account.type.slice(1).toLowerCase()}{" "}
+            Account
           </p>
         </div>
+
         <div className="text-right pb-2">
           <div className="text-xl sm:text-2xl font-bold">
             ${account.balance.toFixed(2)}
