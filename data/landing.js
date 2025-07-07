@@ -7,26 +7,24 @@ import {
   Zap,
 } from "lucide-react";
 
-
-
 // Features Data
 export const featuresData = [
   {
     icon: <BarChart3 className="h-8 w-8 text-blue-600" />,
     title: "Advanced Analytics",
     description:
-      "Get detailed insights into your spending patterns with AI-powered analytics",
+      "Get detailed insights into your spending patterns with smart analytics",
   },
   {
     icon: <Receipt className="h-8 w-8 text-blue-600" />,
     title: "Smart Receipt Scanner",
     description:
-      "Extract data automatically from receipts using advanced AI technology",
+      "Extract data automatically from receipts using modern scanning technology",
   },
   {
     icon: <PieChart className="h-8 w-8 text-blue-600" />,
     title: "Budget Planning",
-    description: "Create and manage budgets with intelligent recommendations",
+    description: "Create and manage budgets with helpful recommendations",
   },
   {
     icon: <CreditCard className="h-8 w-8 text-blue-600" />,
@@ -63,7 +61,7 @@ export const howItWorksData = [
     icon: <PieChart className="h-8 w-8 text-blue-600" />,
     title: "3. Get Insights",
     description:
-      "Receive AI-powered insights and recommendations to optimize your finances",
+      "Receive insights and recommendations to optimize your finances",
   },
 ];
 
@@ -74,7 +72,7 @@ export const testimonialsData = [
     role: "Small Business Owner",
     image: "https://randomuser.me/api/portraits/women/75.jpg",
     quote:
-      "Welth has transformed how I manage my business finances. The AI insights have helped me identify cost-saving opportunities I never knew existed.",
+      "BudgetIQ has transformed how I manage my business finances. The insights have helped me identify cost-saving opportunities I never knew existed.",
   },
   {
     name: "Michael Chen",
@@ -88,6 +86,6 @@ export const testimonialsData = [
     role: "Financial Advisor",
     image: "https://randomuser.me/api/portraits/women/74.jpg",
     quote:
-      "I recommend Welth to all my clients. The multi-currency support and detailed analytics make it perfect for international investors.",
+      "I recommend BudgetIQ to all my clients. The multi-currency support and detailed analytics make it perfect for international investors.",
   },
 ];
