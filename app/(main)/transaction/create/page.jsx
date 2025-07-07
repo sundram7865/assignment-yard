@@ -17,14 +17,17 @@ export default async function AddTransactionPage({ searchParams: rawSearchParams
     const transaction = await getTransaction(editId);
     if (transaction) {
       initialData = {
-        id: transaction._id.toString(),
+        id: transaction._id?.toString?.() ?? "",
         type: transaction.type,
-        amount: transaction.amount,
-        description: transaction.description,
-        accountId: transaction.accountId,
-        category: transaction.category,
-        date: new Date(transaction.date),
-        isRecurring: transaction.isRecurring,
+        amount: parseFloat(transaction.amount?.toString?.() ?? "0"), // ✅ serialized
+        description: transaction.description || "",
+        accountId: transaction.accountId?.toString?.() ?? "",         // ✅ serialized
+        category: transaction.category || "",
+        date:
+          transaction.date instanceof Date
+            ? transaction.date.toISOString()
+            : transaction.date,
+        isRecurring: !!transaction.isRecurring,
         recurringInterval: transaction.recurringInterval || null,
       };
     }

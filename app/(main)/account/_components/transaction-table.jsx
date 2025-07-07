@@ -64,7 +64,6 @@ const RECURRING_INTERVALS = {
   YEARLY: "Yearly",
 };
 
-// Helper to safely convert Decimal128 or string to float
 const parseAmount = (amount) => {
   if (typeof amount === "object" && amount?._bsontype === "Decimal128") {
     return parseFloat(amount.toString());
@@ -343,8 +342,7 @@ export function TransactionTable({ transactions }) {
                         transaction.type === "EXPENSE" ? "text-red-500" : "text-green-500"
                       )}
                     >
-                      {transaction.type === "EXPENSE" ? "-" : "+"}₹
-                      {amount.toFixed(2)}
+                      {transaction.type === "EXPENSE" ? "-" : "+"}${amount.toFixed(2)}
                     </TableCell>
                     <TableCell>
                       {transaction.isRecurring ? (

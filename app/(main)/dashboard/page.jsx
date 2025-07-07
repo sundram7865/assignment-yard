@@ -22,25 +22,29 @@ const serializeBudget = (budget) => {
 // ---- Helper to serialize each transaction safely ----
 const serializeTransaction = (tx) => {
   return {
-    ...tx,
     id: tx._id?.toString?.() ?? tx.id ?? "",
     accountId:
       typeof tx.accountId === "object" && typeof tx.accountId.toString === "function"
         ? tx.accountId.toString()
         : String(tx.accountId ?? ""),
+    type: tx.type || "EXPENSE",
     amount: parseFloat(tx.amount?.toString?.() ?? "0"),
+    description: tx.description || "",
+    category: tx.category || "",
+    isRecurring: !!tx.isRecurring,
+    status: tx.status || "",
     date: tx.date instanceof Date ? tx.date.toISOString() : tx.date,
-    nextRecurringDate: tx.nextRecurringDate instanceof Date
-      ? tx.nextRecurringDate.toISOString()
-      : tx.nextRecurringDate,
-    createdAt: tx.createdAt instanceof Date
-      ? tx.createdAt.toISOString()
-      : tx.createdAt,
-    updatedAt: tx.updatedAt instanceof Date
-      ? tx.updatedAt.toISOString()
-      : tx.updatedAt,
+    nextRecurringDate:
+      tx.nextRecurringDate instanceof Date
+        ? tx.nextRecurringDate.toISOString()
+        : tx.nextRecurringDate,
+    createdAt:
+      tx.createdAt instanceof Date ? tx.createdAt.toISOString() : tx.createdAt,
+    updatedAt:
+      tx.updatedAt instanceof Date ? tx.updatedAt.toISOString() : tx.updatedAt,
   };
 };
+
 
 export default async function DashboardPage() {
   const [accounts, transactions] = await Promise.all([

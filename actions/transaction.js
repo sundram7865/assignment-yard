@@ -12,10 +12,35 @@ const toDecimal128 = (value) =>
 // ✅ Number Conversion from Decimal128
 const toNumber = (decimal) => parseFloat(decimal?.toString() || "0");
 
+// ✅ Manual Serializer to prevent Client Component errors
+function serializeTransaction(tx) {
+  const plain = tx.toObject ? tx.toObject() : tx;
+
+  return {
+    id: plain._id?.toString() || "",
+    accountId: plain.accountId?.toString() || "",
+    type: plain.type,
+    amount: parseFloat(plain.amount?.toString() || "0"),
+    description: plain.description || "",
+    category: plain.category || "",
+    isRecurring: !!plain.isRecurring,
+    recurringInterval: plain.recurringInterval || "",
+    status: plain.status || "",
+    date:
+      plain.date instanceof Date
+        ? plain.date.toISOString()
+        : new Date(plain.date).toISOString(),
+    nextRecurringDate: plain.nextRecurringDate
+      ? new Date(plain.nextRecurringDate).toISOString()
+      : null,
+    createdAt: plain.createdAt?.toISOString?.() || "",
+    updatedAt: plain.updatedAt?.toISOString?.() || "",
+  };
+}
+
 // ✅ Create Transaction
 export async function createTransaction(data) {
   await connectDB();
-
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -52,7 +77,10 @@ export async function createTransaction(data) {
     revalidatePath("/dashboard");
     revalidatePath(`/account/${data.accountId}`);
 
-    return { success: true, data: newTransaction[0].toObject() }; // ✅ Prevent serialization error
+    return {
+      success: true,
+      data: serializeTransaction(newTransaction[0]),
+    };
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
@@ -64,7 +92,6 @@ export async function createTransaction(data) {
 // ✅ Update Transaction
 export async function updateTransaction(id, data) {
   await connectDB();
-
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -111,7 +138,10 @@ export async function updateTransaction(id, data) {
     revalidatePath("/dashboard");
     revalidatePath(`/account/${data.accountId}`);
 
-    return { success: true, data: updated.toObject() }; // ✅ Prevent serialization error
+    return {
+      success: true,
+      data: serializeTransaction(updated),
+    };
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
@@ -126,7 +156,7 @@ export async function getTransaction(id) {
   try {
     const transaction = await Transaction.findById(id);
     if (!transaction) throw new Error("Transaction not found");
-    return transaction.toObject();
+    return serializeTransaction(transaction);
   } catch (error) {
     console.error("Get transaction error:", error);
     return null;
@@ -143,7 +173,7 @@ export async function getUserTransactions(query = {}) {
 
     return {
       success: true,
-      data: transactions.map((t) => t.toObject()),
+      data: transactions.map(serializeTransaction),
     };
   } catch (error) {
     console.error("Get transactions error:", error);

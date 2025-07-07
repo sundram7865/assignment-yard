@@ -5,19 +5,32 @@ import { Account, Transaction } from "@/models/models";
 import mongoose from "mongoose";
 import { revalidatePath } from "next/cache";
 
-// ---------- Serialize helper ----------
+// ---------- Robust Serialize helper ----------
 const serialize = (obj) => {
-  const doc = obj.toObject ? obj.toObject() : obj;
-  const serialized = { ...doc };
+  if (!obj) return null;
 
-  serialized.id = serialized._id?.toString();
+  const doc = typeof obj.toObject === "function" ? obj.toObject() : obj;
+  const serialized = {};
 
-  if (serialized.balance instanceof mongoose.Types.Decimal128) {
-    serialized.balance = parseFloat(serialized.balance.toString());
+  for (const key in doc) {
+    const value = doc[key];
+
+    if (value instanceof mongoose.Types.ObjectId) {
+      serialized[key] = value.toString();
+    } else if (value instanceof mongoose.Types.Decimal128) {
+      serialized[key] = parseFloat(value.toString());
+    } else if (value instanceof Date) {
+      serialized[key] = value.toISOString();
+    } else if (typeof value === "object" && value !== null) {
+      serialized[key] = serialize(value); // recursively serialize nested objects
+    } else {
+      serialized[key] = value;
+    }
   }
 
-  if (serialized.amount instanceof mongoose.Types.Decimal128) {
-    serialized.amount = parseFloat(serialized.amount.toString());
+  // Normalize ID
+  if (serialized._id && !serialized.id) {
+    serialized.id = serialized._id.toString();
   }
 
   return serialized;
@@ -28,12 +41,11 @@ export async function getAccountWithTransactions(accountId) {
   try {
     await connectDB();
 
-    const account = await Account.findById(accountId).lean();
+    const account = await Account.findById(accountId);
     if (!account) return null;
 
     const transactions = await Transaction.find({ accountId })
-      .sort({ date: -1 })
-      .lean();
+      .sort({ date: -1 });
 
     const txCount = await Transaction.countDocuments({ accountId });
 
